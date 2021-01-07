@@ -4,6 +4,7 @@
 from botbuilder.core import ActivityHandler, TurnContext
 from botbuilder.schema import ChannelAccount, MessageReaction
 from botbuilder.core.teams import TeamsActivityHandler
+from botbuilder.schema.teams import TeamsChannelAccount, TeamInfo
 from typing import List
 
 
@@ -25,3 +26,11 @@ class MyBot(TeamsActivityHandler):
     async def on_reactions_removed(self, message_reaction : List[MessageReaction], turn_context : TurnContext):
         for message_reaction in message_reaction:
             await turn_context.send_activity(f"You removed : '{message_reaction.type}'")
+
+    async def on_teams_members_added(self, member_added : [TeamsChannelAccount], team_info : TeamInfo, turn_context : TurnContext):
+        for member in member_added:
+            await turn_context.send_activity(MessageFactory.text(f"Welcome {member.name}, R2D2 is at your service"))
+    
+    async def on_teams_members_removed(self, member_added : [TeamsChannelAccount], team_info : TeamInfo, turn_context : TurnContext):
+        for member in member_added:
+            await turn_context.send_activity(MessageFactory.text(f"{member.name} has been removed from this chat"))
