@@ -4,6 +4,7 @@
 import sys
 import traceback
 from datetime import datetime
+from http import HTTPStatus
 
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
@@ -15,8 +16,9 @@ from botbuilder.core import (
 from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes
 
-from botbuilder.core import ConversationState, MemoryStorage
+from botbuilder.core import ConversationState, MemoryStorage, UserState
 from bot import MyBot
+from welcome import WelcomeUserBot
 from config import DefaultConfig
 
 """import asyncio
@@ -63,8 +65,12 @@ async def on_error(context: TurnContext, error: Exception):
 
 ADAPTER.on_turn_error = on_error
 
+# Create MemoryStorage, UserState
+MEMORY = MemoryStorage()
+USER_STATE = UserState(MEMORY)
+
 # Create the Bot
-BOT = MyBot()
+BOT = WelcomeUserBot(USER_STATE)
 
 
 # Listen for incoming requests on /api/messages
@@ -73,7 +79,7 @@ async def messages(req: Request) -> Response:
     if "application/json" in req.headers["Content-Type"]:
         body = await req.json()
     else:
-        return Response(status=415)
+        return Response(status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
 
     activity = Activity().deserialize(body)
     auth_header = req.headers["Authorization"] if "Authorization" in req.headers else ""
