@@ -27,26 +27,15 @@ class WelcomeUserBot(ActivityHandler):
 
         self.user_state_accessor = self._user_state.create_property("WelcomeUserState")
 
-        self.WELCOME_MESSAGE = """This is a simple Welcome Bot sample. This bot will introduce you
-                        to welcoming and greeting users. You can say 'intro' to see the
-                        introduction card. If you are running this bot in the Bot Framework
-                        Emulator, press the 'Restart Conversation' button to simulate user joining
-                        a bot or a channel"""
+        self.WELCOME_MESSAGE = "Hi there, R2D2 is at your service !"
 
-        self.INFO_MESSAGE = """You are seeing this message because the bot received at least one
-                        'ConversationUpdate' event, indicating you (and possibly others)
-                        joined the conversation. If you are using the emulator, pressing
-                        the 'Start Over' button to trigger this event again. The specifics
-                        of the 'ConversationUpdate' event depends on the channel. You can
-                        read more information at: https://aka.ms/about-botframework-welcome-user"""
+        self.INFO_MESSAGE = "I am here to make your life easy"
 
         self.LOCALE_MESSAGE = """"You can use the 'activity.locale' property to welcome the
                         user using the locale received from the channel. If you are using the 
                         Emulator, you can set this value in Settings."""
 
-        self.PATTERN_MESSAGE = """It is a good pattern to use this event to send general greeting
-                        to user, explaining what your bot can do. In this example, the bot
-                        handles 'hello', 'hi', 'help' and 'intro'. Try it now, type 'hi'"""
+        self.PATTERN_MESSAGE = "Not sure what you should do next ?\nTry typing help or intro"
 
     async def on_turn(self, turn_context: TurnContext):
         await super().on_turn(turn_context)
@@ -89,14 +78,15 @@ class WelcomeUserBot(ActivityHandler):
 
         if not welcome_user_state.did_welcome_user:
             welcome_user_state.did_welcome_user = True
-
+            
+            # Will be on first message from user
             await turn_context.send_activity(
-                "You are seeing this message because this was your first message ever to this bot."
+                "How are you today ?"
             )
 
             name = turn_context.activity.from_property.name
             await turn_context.send_activity(
-                f"It is a good practice to welcome the user and provide personal greeting. For example: Welcome {name}"
+                f"I am here to help you {name}"
             )
 
         else:
