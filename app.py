@@ -15,15 +15,17 @@ from botbuilder.core import (
 from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes
 
+from botbuilder.core import ConversationState, MemoryStorage
 from bot import MyBot
 from config import DefaultConfig
 
-#from bot_dialog import BotDialog #dialog
+"""import asyncio
+from botdialog import BotDialog #dialog"""
 
 CONFIG = DefaultConfig()
 
-#CONMEMORY = ConversationState(MemoryStorage()) #dialog
-#botdialog = BotDialog(CONMEMORY)#dialog
+"""CONMEMORY = ConversationState(MemoryStorage()) #dialog
+botdialog = BotDialog(CONMEMORY) #dialog"""
 
 # Create adapter.
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.
@@ -76,8 +78,8 @@ async def messages(req: Request) -> Response:
     activity = Activity().deserialize(body)
     auth_header = req.headers["Authorization"] if "Authorization" in req.headers else ""
 
-    #async def call_fun(turn_context):
-     #   await botdialog.on_turn(turn_context)
+    """async def call_fun(turn_context):
+        await botdialog.on_turn(turn_context)"""
 
     try:
         response = await ADAPTER.process_activity(activity, auth_header, BOT.on_turn)

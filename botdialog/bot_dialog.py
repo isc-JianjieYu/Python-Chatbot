@@ -1,4 +1,4 @@
-from botbuilder.core import TurnContext, ActivityHandler, ConversationState
+from botbuilder.core import TurnContext, ActivityHandler, ConversationState, MessageFactory
 from botbuilder.dialogs import DialogSet, WaterfallDialog, WaterfallStepContext
 from botbuilder.dialogs.prompts import TextPrompt,NumberPrompt
 
