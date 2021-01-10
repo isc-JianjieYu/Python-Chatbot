@@ -27,7 +27,7 @@ class WelcomeUserBot(ActivityHandler):
 
         self.user_state_accessor = self._user_state.create_property("WelcomeUserState")
 
-        self.WELCOME_MESSAGE = "Hi there, R2D2 is at your service !"
+        self.WELCOME_MESSAGE = "R2D2 is at your service !"
 
         self.INFO_MESSAGE = "I am here to make your life easy"
 
@@ -94,40 +94,40 @@ class WelcomeUserBot(ActivityHandler):
             # understanding.
             text = turn_context.activity.text.lower()
             if text in ("hello", "hi"):
-                await turn_context.send_activity(f"You said { text }")
+                await turn_context.send_activity(f"Did you say { text } ?")
             elif text in ("intro", "help"):
                 await self.__send_intro_card(turn_context)
+            elif text in ("list of patients", "results", "upcoming appointments"):
+                await turn_context.send_activity("Connect me to TrakCare first !!")
             else:
                 await turn_context.send_activity(self.WELCOME_MESSAGE)
 
     async def __send_intro_card(self, turn_context: TurnContext):
         card = HeroCard(
-            title="Welcome to Bot Framework!",
-            text="Welcome to Welcome Users bot sample! This Introduction card "
-            "is a great way to introduce your Bot to the user and suggest "
-            "some things to get them started. We use this opportunity to "
-            "recommend a few next steps for learning more creating and deploying bots.",
+            title="R2D2 your personal assistant",
+            text="You can ask me anything related to your patients.\n"
+            "Below are few things you can try :)",
             images=[CardImage(url="https://aka.ms/bf-welcome-card-image")],
             buttons=[
                 CardAction(
                     type=ActionTypes.open_url,
-                    title="Get an overview",
-                    text="Get an overview",
-                    display_text="Get an overview",
+                    title="Get list of patients",
+                    text="Get list of patients",
+                    display_text="Get list of patients",
                     value="https://docs.microsoft.com/en-us/azure/bot-service/?view=azure-bot-service-4.0",
                 ),
                 CardAction(
                     type=ActionTypes.open_url,
-                    title="Ask a question",
-                    text="Ask a question",
-                    display_text="Ask a question",
+                    title="View most recent results",
+                    text="View most recent results",
+                    display_text="View most recent results",
                     value="https://stackoverflow.com/questions/tagged/botframework",
                 ),
                 CardAction(
                     type=ActionTypes.open_url,
-                    title="Learn how to deploy",
-                    text="Learn how to deploy",
-                    display_text="Learn how to deploy",
+                    title="Upcoming appointments",
+                    text="Upcoming appointments",
+                    display_text="Upcoming appointments",
                     value="https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-howto-deploy-azure?view=azure-bot-service-4.0",
                 ),
             ],
