@@ -17,20 +17,29 @@ class MyBot(TeamsActivityHandler):
     async def on_message_activity(self, turn_context: TurnContext):
         USER = '_system'
         PASS = 'trakcare'
-        
-        text = turn_context.activity.text.strip()
-        if text.lower() in ("hello", "hi", "botInterSystems", "@botInterSystems hi"):
+        TurnContext.remove_recipient_mention(turn_context.activity)
+        text = turn_context.activity.text.strip().lower()
+        lsText = text.split(" ")
+        if text in ("hello", "hi", "botInterSystems", "@botInterSystems hi"):
             await turn_context.send_activity("Hi, I'm the InterSystems Bot. Here to help you!")
-        elif text.lower() in ("intro", "help","botInterSystems intro", "@botInterSystems help"):
+        elif text in ("intro", "help","botInterSystems intro", "@botInterSystems help"):
             await self.__send_intro_card(turn_context)
-        elif text.lower() in ("list of patients", "results", "upcoming appointments"):
+        elif text in ("list of patients", "results", "upcoming appointments"):
             await turn_context.send_activity("Connect me to TrakCare first !!")
-        elif text.lower() in ("patients", "list patients"):
+        elif text in ("patients", "list patients"):
             #URL for GET request
             url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/all"
-            TurnContext.remove_recipient_mention(turn_context.activity)
             response = requests.get(url, auth=(USER, PASS))
-            await turn_context.send_activity(response.text)
+            arryPatients = json.loads(response.text)
+            for patient in arryPatients:
+                add = formatPatient(self, patient)
+                await turn_context.send_activity(add)
+        elif lsText[0] == "patient":
+            url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/" + lsText[1]
+            response = requests.get(url, auth=(USER, PASS))
+            patient = json.loads(response.text)
+            printing = formatPatient(self, patient)
+            await turn_context.send_activity(printing)
         else:
             await turn_context.send_activity(f"Did you say '{ text }'?")
 
@@ -104,3 +113,7 @@ class MyBot(TeamsActivityHandler):
         return await turn_context.send_activity(
                     MessageFactory.attachment(CardFactory.hero_card(card))
                 )
+
+def formatPatient(self, patient : dict):
+    add = "Name: " + patient["Name"] + "\n\nTitle: " + patient["Title"] + "\n\nCompany: " + patient["Company"] + "\n\nPhone: " + patient["Phone"] + "\n\nDOB: " + patient["DOB"] + "\n\n"
+    return add
