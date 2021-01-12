@@ -24,8 +24,6 @@ class MyBot(TeamsActivityHandler):
             await turn_context.send_activity("Hi, I'm the InterSystems Bot. Here to help you!")
         elif text in ("intro", "help","botInterSystems intro", "@botInterSystems help"):
             await self.__send_intro_card(turn_context)
-        elif text in ("list of patients", "results", "upcoming appointments"):
-            await turn_context.send_activity("Connect me to TrakCare first !!")
         elif text in ("patients", "list patients"):
             #URL for GET request
             url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/all"
