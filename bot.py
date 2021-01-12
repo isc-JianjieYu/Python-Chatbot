@@ -32,13 +32,13 @@ class MyBot(TeamsActivityHandler):
             response = requests.get(url, auth=(USER, PASS))
             arryPatients = json.loads(response.text)
             for patient in arryPatients:
-                add = formatPatient(self, patient)
+                add = formatPatient(patient)
                 await turn_context.send_activity(add)
         elif lsText[0] == "patient":
             url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/" + lsText[1]
             response = requests.get(url, auth=(USER, PASS))
             patient = json.loads(response.text)
-            printing = formatPatient(self, patient)
+            printing = formatPatient(patient)
             await turn_context.send_activity(printing)
         else:
             await turn_context.send_activity(f"Did you say '{ text }'?")
@@ -114,6 +114,6 @@ class MyBot(TeamsActivityHandler):
                     MessageFactory.attachment(CardFactory.hero_card(card))
                 )
 
-def formatPatient(self, patient : dict):
+def formatPatient(patient : dict):
     add = "Name: " + patient["Name"] + "\n\nTitle: " + patient["Title"] + "\n\nCompany: " + patient["Company"] + "\n\nPhone: " + patient["Phone"] + "\n\nDOB: " + patient["DOB"] + "\n\n"
     return add
