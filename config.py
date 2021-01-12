@@ -8,5 +8,5 @@ class DefaultConfig:
     """ Bot Configuration """
 
     PORT = 3978
-    APP_ID = os.environ.get("MicrosoftAppId", "")
-    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "")
+    APP_ID = os.environ.get("MicrosoftAppId", "4752eb87-8ffe-4677-981c-7159eb0688a2")
+    APP_PASSWORD = os.environ.get("MicrosoftAppPassword", "itBgH~xE5y_l~335EW4Ei_yz3IqYmU-3j-")

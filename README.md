@@ -1,6 +1,6 @@
-# R2D2
+# testbot
 
-EcHo
+Testing bot
 
 This bot has been created using [Bot Framework](https://dev.botframework.com), it shows how to create a simple bot that accepts input from the user and echoes it back.
 

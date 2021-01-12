@@ -4,7 +4,6 @@
 import sys
 import traceback
 from datetime import datetime
-from http import HTTPStatus
 
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
@@ -16,18 +15,10 @@ from botbuilder.core import (
 from botbuilder.core.integration import aiohttp_error_middleware
 from botbuilder.schema import Activity, ActivityTypes
 
-from botbuilder.core import ConversationState, MemoryStorage, UserState
 from bot import MyBot
-from welcome import WelcomeUserBot
 from config import DefaultConfig
 
-"""import asyncio
-from botdialog import BotDialog #dialog"""
-
 CONFIG = DefaultConfig()
-
-"""CONMEMORY = ConversationState(MemoryStorage()) #dialog
-botdialog = BotDialog(CONMEMORY) #dialog"""
 
 # Create adapter.
 # See https://aka.ms/about-bot-adapter to learn more about how bots work.
@@ -65,12 +56,8 @@ async def on_error(context: TurnContext, error: Exception):
 
 ADAPTER.on_turn_error = on_error
 
-# Create MemoryStorage, UserState
-MEMORY = MemoryStorage()
-USER_STATE = UserState(MEMORY)
-
 # Create the Bot
-BOT = WelcomeUserBot(USER_STATE)
+BOT = MyBot()
 
 
 # Listen for incoming requests on /api/messages
@@ -79,13 +66,10 @@ async def messages(req: Request) -> Response:
     if "application/json" in req.headers["Content-Type"]:
         body = await req.json()
     else:
-        return Response(status=HTTPStatus.UNSUPPORTED_MEDIA_TYPE)
+        return Response(status=415)
 
     activity = Activity().deserialize(body)
     auth_header = req.headers["Authorization"] if "Authorization" in req.headers else ""
-
-    """async def call_fun(turn_context):
-        await botdialog.on_turn(turn_context)"""
 
     try:
         response = await ADAPTER.process_activity(activity, auth_header, BOT.on_turn)
