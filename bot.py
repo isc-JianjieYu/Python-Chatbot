@@ -20,9 +20,9 @@ class MyBot(TeamsActivityHandler):
         TurnContext.remove_recipient_mention(turn_context.activity)
         text = turn_context.activity.text.strip().lower()
         lsText = text.split(" ")
-        if text in ("hello", "hi", "botInterSystems", "@botInterSystems hi"):
+        if text in ("hello", "hi"):
             await turn_context.send_activity("Hi, I'm the InterSystems Bot. Here to help you!")
-        elif text in ("intro", "help","botInterSystems intro", "@botInterSystems help"):
+        elif text in ("intro", "help"):
             await self.__send_intro_card(turn_context)
         elif text in ("patients", "list patients"):
             #URL for GET request
