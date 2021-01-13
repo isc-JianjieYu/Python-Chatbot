@@ -33,11 +33,28 @@ class MyBot(TeamsActivityHandler):
                 add = formatPatient(patient)
                 await turn_context.send_activity(add)
         elif lsText[0] == "patient":
-            url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/" + lsText[1]
-            response = requests.get(url, auth=(USER, PASS))
-            patient = json.loads(response.text)
-            printing = formatPatient(patient)
-            await turn_context.send_activity(printing)
+            if lsText[1].isnumeric():
+                url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/" + lsText[1]
+                response = requests.get(url, auth=(USER, PASS))
+                try:
+                    patient = json.loads(response.text)
+                    printing = formatPatient(patient)
+                    await turn_context.send_activity(printing)
+                except:
+                    await turn_context.send_activity("Patient not found!")     
+            else:
+                url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/all"
+                response = requests.get(url, auth=(USER, PASS))
+                arryPatients = json.loads(response.text)
+                found = False
+                for patient in arryPatients:
+                    name = patient["Name"].lower()
+                    if lsText[1] in name:
+                        printing = formatPatient(patient)
+                        found = True
+                        await turn_context.send_activity(printing)
+                if found == False:
+                    await turn_context.send_activity(f"Patient with keyword {lsText[1]} not found!")
         else:
             await turn_context.send_activity(f"Did you say '{ text }'?")
 
