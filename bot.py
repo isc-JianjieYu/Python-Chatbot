@@ -103,22 +103,22 @@ class MyBot(TeamsActivityHandler):
         buttons=[
                 CardAction(
         type=ActionTypes.open_url,
-        title="Get list of patients",
-        text="Get list of patients",
+        title="list patients / patients",
+        text="list patients / patients",
         display_text="list patients / patients",
         value="https://docs.microsoft.com/en-us/azure/bot-service/?view=azure-bot-service-4.0",
                         ),
                         CardAction(
         type=ActionTypes.open_url,
-        title="fetch patient by id",
-        text="fetch patient by id",
+        title="patient <id>",
+        text="patient <id>",
         display_text="patient <id>",
         value="https://stackoverflow.com/questions/tagged/botframework",
                         ),
                         CardAction(
         type=ActionTypes.open_url,
-        title="fetch patient by name",
-        text="fetch patient by name",
+        title="patient <keyword>",
+        text="patient <keyword>",
         display_text="patient <keyword>",
         value="https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-howto-deploy-azure?view=azure-bot-service-4.0",
                         ),
