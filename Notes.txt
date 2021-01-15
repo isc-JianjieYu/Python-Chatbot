@@ -1,0 +1,21 @@
+/Patient?given=sachin  (search by name)
+[parameter]=eq2013-01-14 (search by date)  GET [base]/Patient/23/Procedure?date=ge2010-01-01&date=le2011-12-31
+
+search for active patients :
+https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient?active=true
+
+Observation query by value:
+https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Observation?value-quantity=5.4
+
+View all the Allergy Intolarance in Database:
+https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/AllergyIntolerance
+
+last updated parameter:
+https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Observation?_lastUpdated=gt2010-10-01
+
+switch link:
+https://tcfhirsandbox.intersystems.com.au/t2019grxx/csp/system.Home.cls#/Direct/AW.Direct.EPR?RegistrationNo=RN000000086
+
+
+
+

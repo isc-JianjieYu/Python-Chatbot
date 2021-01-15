@@ -1,3 +1,4 @@
+from os import SEEK_END
 from botbuilder.core import (
     ActivityHandler,
     TurnContext,
@@ -14,7 +15,17 @@ from botbuilder.schema import (
 )
 
 from data_models import WelcomeUserState
-import requests, sys, json, subprocess
+import requests
+import json
+
+#Globals for patient data
+trak_url = ''
+trak_name = ''
+trak_recordNumber = ''
+trak_gender = ''
+trak_dob = ''
+trak_careProvider= ''
+trak_allergy_url = ''
 
 # Greet users who interact with the bot for first time
 class WelcomeUserBot(ActivityHandler):
@@ -31,8 +42,6 @@ class WelcomeUserBot(ActivityHandler):
         self.WELCOME_MESSAGE = "R2D2 is at your service !"
 
         self.INFO_MESSAGE = "I am here to make your life easy"
-
-        self.LOCALE_MESSAGE = "Current locale is "
 
         self.PATTERN_MESSAGE = "Not sure what you should do next ?\nTry typing help or intro"
 
@@ -55,14 +64,10 @@ class WelcomeUserBot(ActivityHandler):
         for member in members_added:
             if member.id != turn_context.activity.recipient.id:
                 await turn_context.send_activity(
-                    f"Hi there { member.name }. " + self.WELCOME_MESSAGE
+                    f"Hi { member.name }. " + self.WELCOME_MESSAGE
                 )
 
                 await turn_context.send_activity(self.INFO_MESSAGE)
-
-                await turn_context.send_activity(
-                    f"{ self.LOCALE_MESSAGE } { turn_context.activity.locale }."
-                )
 
                 await turn_context.send_activity(self.PATTERN_MESSAGE)
 
@@ -70,6 +75,14 @@ class WelcomeUserBot(ActivityHandler):
         """
         Respond to messages sent from the user.
         """
+        # Using the global variables
+        global trak_name
+        global trak_allergy_url
+        global trak_careProvider
+        global trak_dob
+        global trak_gender
+        global trak_recordNumber        
+        
         # Get the state properties from the turn context.
         welcome_user_state = await self.user_state_accessor.get(
             turn_context, WelcomeUserState
@@ -85,7 +98,7 @@ class WelcomeUserBot(ActivityHandler):
 
             name = turn_context.activity.from_property.name
             await turn_context.send_activity(
-                f"I am here to help you {name}"
+                f"What can I help you with {name} ?"
             )
 
         else:
@@ -100,7 +113,7 @@ class WelcomeUserBot(ActivityHandler):
             PASS = 'SYS'
             """
             # token needs to be entered manually.
-            token = 'QlBZMmXe3bo6rMw9a3f9wO1rVeg7jFnqgv5Q-tISbXUtZPemt_2H_4slcMb3aeizavaRGksg0IsRlF6vomv6pA'
+            token = 'hh6k4b4TgOCNhy9FkBAy-2Mf90BISwlEoQdf7glrCBAbfmwf_0FI7LZvsoYYqlVButsB1d8Ub-37SYUbYEz6Sg'
             call_header = {'accept':'application/json','Authorization': 'Bearer ' + token}
 
             # splits the user input and makes a list
@@ -109,69 +122,58 @@ class WelcomeUserBot(ActivityHandler):
             # keywords that will be used by the bot to compare the user input
             if text in ("hello", "hi"):
                 await turn_context.send_activity(f"Did you say { text } ?")
-            elif text in ("intro", "help"):
+            elif text in ("go to trakcare", "trakcare"):
                 await self.__send_intro_card(turn_context)
-            elif text in ("list of patients", "results", "upcoming appointments"):
-                await turn_context.send_activity("Connect me to TrakCare first !!")
-            elif text in ("list patients", "patients"):
-                #URL for GET request
-                url = 'https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient/137'
-                #Run GET
-                response = requests.get(url, headers=call_header, verify=True)
-                try:
-                    r_dict = json.loads(response.text)
-                    await turn_context.send_activity(f"{r_dict}")
-                    """sr = 1
-                    name_list = " "
-                    for p in r_dict:
-                        name_list = name_list + str(sr) + ". " + p["Name"] + "\n\n"
-                        sr+=1
-                        await turn_context.send_activity(name_list)"""
-                    """for p in r_dict:
-                        pat = fmat(p)
-                        await turn_context.send_activity(f"{pat}")"""
-                except:
-                    await turn_context.send_activity('Your token has experied !')
+            elif text in ("list options", "options"):
+                    await turn_context.send_activity('You can perform following querries:\n1. Get patient Medical Record Number and Care provider\nUse: patient 137\n\n2. Get Recent Observations\nUse: \n\n3. Get recent result of a patient\nUse: \n\n4. Get patient allergies\nUse: ')
+            elif text in ("patient"):
+                await turn_context.send_activity('Please type the patient ID after patient. Eg: "patient 137"')
             elif ltxt[0] == "patient":
                 try:
                     if ltxt [1] != "0":
                         url = "https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient/" + ltxt[1]
-                        response = requests.get(url, headers=call_header, verify=False)
-                        #r_dict = json.loads(response.text)
-                        #pat = fmat(r_dict)
-                        await turn_context.send_activity(f"{response.text}")
+                        response = requests.get(url, headers = call_header, verify = True)
+                        r_dict = json.loads(response.text)
+                        try: 
+                            trakurl = (f"https://tcfhirsandbox.intersystems.com.au/t2019grxx/csp/system.Home.cls#/Direct/AW.Direct.EPR?RegistrationNo={str(r_dict['identifier'][1]['value'])}")
+                            trak_name = (f"{r_dict['name'][0]['text']}")
+                            trak_careProvider = (f"{r_dict['careProvider'][0]['display']}")
+                            trak_recordNumber = (f"{r_dict['identifier'][1]['value']}")
+                            trak_dob = (f"{r_dict['birthDate']}")
+                            trak_gender = (f"{r_dict['gender']}")
+                            trak_allergy_url = (f"https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient/{ltxt[1]}/AllergyIntolerance")
+                            await turn_context.send_activity(f"Record Number : {trak_recordNumber}\n\n\t Name : {trak_name}\n\t  Sex : {trak_gender}\n\t  DOB : {trak_dob}\nCare Provider : {trak_careProvider}")
+                        except:
+                            await turn_context.send_activity("Patient not found !")
                 except:
-                    await turn_context.send_activity("Patient not found !")
+                    await turn_context.send_activity("Your token has experied !")
+            elif text in ("allergy", "allergy intolerance"):
+                try:
+                    allergy_resposne = requests.get(trak_allergy_url, headers = call_header, verify = True)
+                    a_dict = json.loads(allergy_resposne.text)
+                    a_total = (f"{a_dict['total']}")
+                    if a_total != "0":
+                        await turn_context.send_activity(f"{a_total}")
+                    else:
+                        await turn_context.send_activity("This patient has no allergies.")
+                except:
+                    await turn_context.send_activity("Something is wrong ! Please check the source code")
+
             else:
-                await turn_context.send_activity(self.WELCOME_MESSAGE)
+                await turn_context.send_activity("I am SORRY!, I don't understand that.")
 
     async def __send_intro_card(self, turn_context: TurnContext):
         card = HeroCard(
-            title="R2D2 your personal assistant",
-            text="You can ask me anything related to your patients.\n"
-            "Below are few things you can try :)",
+            title=(f"Portal to TrakCare"),
+            text= (f"Click the button below to go to {trak_name} TrakCare profile"),
             images=[CardImage(url="https://aka.ms/bf-welcome-card-image")],
             buttons=[
                 CardAction(
                     type=ActionTypes.open_url,
-                    title="Get list of patients",
-                    text="Get list of patients",
-                    display_text="Get list of patients",
-                    value="Put a hyperlink",
-                ),
-                CardAction(
-                    type=ActionTypes.open_url,
-                    title="View most recent results",
-                    text="View most recent results",
-                    display_text="View most recent results",
-                    value="Put a hyperlink",
-                ),
-                CardAction(
-                    type=ActionTypes.open_url,
-                    title="Upcoming appointments",
-                    text="Upcoming appointments",
-                    display_text="Upcoming appointments",
-                    value="Put a hyperlink",
+                    title="Go to trakacare",
+                    text="Go to trakacare",
+                    display_text="Go to trakacare",
+                    value= (trak_url),
                 ),
             ],
         )
@@ -179,8 +181,3 @@ class WelcomeUserBot(ActivityHandler):
         return await turn_context.send_activity(
             MessageFactory.attachment(CardFactory.hero_card(card))
         )
-
-#Formats Data
-def fmat(pdata:dict):
-    op = "Name : " + pdata["Name"] + "\n\nTitle : " + pdata["Title"] + "\n\nCompany : " + pdata["Company"] + "\n\nPhone : " + pdata["Phone"] + "\n\nDOB : " + pdata["DOB"]
-    return op
