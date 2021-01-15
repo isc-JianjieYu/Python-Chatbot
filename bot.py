@@ -3,20 +3,23 @@
 
 from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, CardFactory
 from botbuilder.core.teams import TeamsActivityHandler
-from botbuilder.schema import ChannelAccount, MessageReaction, HeroCard, CardImage, CardAction, ActionTypes, Mention
+from botbuilder.schema import ChannelAccount, MessageReaction, HeroCard, CardImage, CardAction, ActionTypes, Mention, BasicCard
 from botbuilder.schema.teams import TeamsChannelAccount, TeamInfo, ChannelInfo
 from typing import List
 import requests
 import sys
 import json
+import subprocess
 
 
 class MyBot(TeamsActivityHandler):
     # See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types.
 
     async def on_message_activity(self, turn_context: TurnContext):
-        USER = '_system'
-        PASS = 'trakcare'
+        token = 'G167aBccrSmqMuaiRSgAPKi1iYS-zyMLFysWMcwZ1LQhujkObBcH993nSuTPdB4xHVYCikY8fIajc9nn-CzuKw'
+        call_header = {'accept':'application/json','Authorization': 'Bearer ' + token}
+        url_base = 'https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient'
+       
         TurnContext.remove_recipient_mention(turn_context.activity)
         text = turn_context.activity.text.strip().lower()
         lsText = text.split(" ")
@@ -24,37 +27,31 @@ class MyBot(TeamsActivityHandler):
             await turn_context.send_activity("Hi, I'm the InterSystems Bot. Here to help you!")
         elif text in ("intro", "help"):
             await self.__send_intro_card(turn_context)
-        elif text in ("patients", "list patients"):
-            #URL for GET request
-            url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/all"
-            response = requests.get(url, auth=(USER, PASS))
-            arryPatients = json.loads(response.text)
-            for patient in arryPatients:
-                add = formatPatient(patient)
-                await turn_context.send_activity(add)
+        # elif text in ("patients", "list patients"):
+        #     #URL for GET request
+        #     url = url_base
+        #     response = requests.get(url, headers=call_header, verify=True)
+        #     arryPatients = json.loads(response.text)
+        #     for patient in arryPatients:
+        #         add = formatPatient(patient)
+        #         await turn_context.send_activity(add)
         elif lsText[0] == "patient":
-            if lsText[1].isnumeric():
-                url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/" + lsText[1]
-                response = requests.get(url, auth=(USER, PASS))
-                try:
-                    patient = json.loads(response.text)
-                    printing = formatPatient(patient)
-                    await turn_context.send_activity(printing)
-                except:
-                    await turn_context.send_activity("Patient not found!")     
-            else:
-                url = "http://trak.australiasoutheast.cloudapp.azure.com/rest/persons/all"
-                response = requests.get(url, auth=(USER, PASS))
-                arryPatients = json.loads(response.text)
-                found = False
-                for patient in arryPatients:
-                    name = patient["Name"].lower()
-                    if lsText[1] in name:
-                        printing = formatPatient(patient)
-                        found = True
-                        await turn_context.send_activity(printing)
-                if found == False:
-                    await turn_context.send_activity(f"Patient with keyword {lsText[1]} not found!")
+            url = url_base
+            response = requests.get(url, headers=call_header, verify=True)
+            patients = json.loads(response.text)["entry"]
+            search = lsText[1]
+            find = False
+            patient_find = {}
+            for patient in patients:
+                if "identifier" in patient["resource"]:
+                    if patient["resource"]["identifier"][1]["value"].lower() == search:
+                        find = True
+                        patient_find = patient
+                        break
+            if find == False:
+                await turn_context.send_activity("Patient not found!")
+            else: 
+                await self.__send_patient_card(turn_context, patient_find)
         else:
             await turn_context.send_activity(f"Did you say '{ text }'?")
 
@@ -128,7 +125,43 @@ class MyBot(TeamsActivityHandler):
         return await turn_context.send_activity(
                     MessageFactory.attachment(CardFactory.hero_card(card))
                 )
+    async def __send_patient_card(self, turn_context: TurnContext, patient : dict):
+        if "identifier" in patient["resource"]:
+            MRN = patient["resource"]["identifier"][1]["value"]
+        else:
+            MRN = "Undefined identifier"
+        if "name" in patient["resource"]:
+            family = patient["resource"]["name"][0]["family"][0]
+            given = patient["resource"]["name"][0]["given"][0]
+        else:
+            family = "Undefined family name"
+            given = "Undefined given name"
+        if "gender" in patient["resource"]:
+            gender = patient["resource"]["gender"]
+        else:
+            gender = "Undefined gender"
+        if "birthDate" in patient["resource"]:
+            DOB = patient["resource"]["birthDate"]
+        else:
+            DOB = "Undefined DOB"
+        if "careProvider" in patient["resource"]:
+            care_provider = patient["resource"]["careProvider"]
+        else:
+            care_provider = "Undefined care provider"
 
-def formatPatient(patient : dict):
-    add = "Name: " + patient["Name"] + "\n\nTitle: " + patient["Title"] + "\n\nCompany: " + patient["Company"] + "\n\nPhone: " + patient["Phone"] + "\n\nDOB: " + patient["DOB"] + "\n\n"
-    return add
+        link = "https://tcfhirsandbox.intersystems.com.au/t2019grxx/csp/system.Home.cls#/Direct/AW.Direct.EPR?RegistrationNo=" + MRN
+
+        card = HeroCard(
+        title=MRN,
+        text="Name: " + family + " " + given + "\nGender: " + gender + "\nDOB: " + DOB + "\nCare Provider: " + care_provider,
+        buttons= CardAction(
+        type=ActionTypes.open_url,
+        title="Go to TrakCare",
+        text="Go to TrakCare",
+        display_text="Go to TrakCare",
+        value=link)
+                )
+        
+        return await turn_context.send_activity(
+                    MessageFactory.attachment(CardFactory.hero_card(card))
+                )
