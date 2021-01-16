@@ -16,7 +16,7 @@ class MyBot(TeamsActivityHandler):
     # See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types.
 
     async def on_message_activity(self, turn_context: TurnContext):
-        token = 'G167aBccrSmqMuaiRSgAPKi1iYS-zyMLFysWMcwZ1LQhujkObBcH993nSuTPdB4xHVYCikY8fIajc9nn-CzuKw'
+        token = 'r57nRikJuOFsdufl5u9kowVbJLFl5YDEb3VmY60iVLyZhx63Vi4FwnvJlPL85yc-rIBHLG6ryXu0tgj-iwmH8w'
         call_header = {'accept':'application/json','Authorization': 'Bearer ' + token}
         url_base = 'https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient'
        
@@ -27,14 +27,33 @@ class MyBot(TeamsActivityHandler):
             await turn_context.send_activity("Hi, I'm the InterSystems Bot. Here to help you!")
         elif text in ("intro", "help"):
             await self.__send_intro_card(turn_context)
-        # elif text in ("patients", "list patients"):
-        #     #URL for GET request
-        #     url = url_base
-        #     response = requests.get(url, headers=call_header, verify=True)
-        #     arryPatients = json.loads(response.text)
-        #     for patient in arryPatients:
-        #         add = formatPatient(patient)
-        #         await turn_context.send_activity(add)
+        elif lsText[0] == "allergy":
+            url = url_base
+            response = requests.get(url, headers=call_header, verify=True)
+            patients = json.loads(response.text)["entry"]
+            search = lsText[1]
+            find = False
+            patient_find = {}
+            for patient in patients:
+                if "identifier" in patient["resource"]:
+                    if patient["resource"]["identifier"][1]["value"].lower() == search:
+                        find = True
+                        patient_find = patient
+                        break
+            if find == False:
+                await turn_context.send_activity("Patient not found!")
+            else: 
+                urlAllergy = url_base + "/" + patient_find["resource"]["id"] + "/AllergyIntolerance"
+                response = requests.get(urlAllergy, headers=call_header, verify=True)
+                allergies = json.loads(response.text)
+                for entry in allergies["entry"]:
+                    substance = entry["resource"]["substance"]["text"]
+                    note = entry["resource"]["note"]["text"]
+                    reaction = entry["resource"]["reaction"][0]["manifestation"][0]["text"]
+                    serverity = entry["resource"]["reaction"][0]["severity"]
+                    display = "Substance: " + substance + "\n\nNote: " + note + "\n\nReaction: " + reaction + "\n\nServerity: " + serverity + "\n\n"
+                    await turn_context.send_activity(display)
+                    
         elif lsText[0] == "patient":
             url = url_base
             response = requests.get(url, headers=call_header, verify=True)
@@ -145,21 +164,28 @@ class MyBot(TeamsActivityHandler):
         else:
             DOB = "Undefined DOB"
         if "careProvider" in patient["resource"]:
-            care_provider = patient["resource"]["careProvider"]
+            care_provider = []
+            for care in patient["resource"]["careProvider"]:
+                care_provider.append(care["display"])
+            txtCareProvider = ""
+            for care in care_provider:
+                txtCareProvider = txtCareProvider + care + "\n"
         else:
-            care_provider = "Undefined care provider"
+            txtCareProvider = "Undefined care provider"
 
         link = "https://tcfhirsandbox.intersystems.com.au/t2019grxx/csp/system.Home.cls#/Direct/AW.Direct.EPR?RegistrationNo=" + MRN
-
         card = HeroCard(
         title=MRN,
-        text="Name: " + family + " " + given + "\nGender: " + gender + "\nDOB: " + DOB + "\nCare Provider: " + care_provider,
-        buttons= CardAction(
+        text = "Name: " + family + " " + given + "\n\nGender: " + gender + "\n\nDOB: " + DOB + "\n\nCare Provider: " + txtCareProvider,
+        buttons = [
+                CardAction(
         type=ActionTypes.open_url,
         title="Go to TrakCare",
         text="Go to TrakCare",
         display_text="Go to TrakCare",
-        value=link)
+        value=link,
+                        ),
+                    ],
                 )
         
         return await turn_context.send_activity(
