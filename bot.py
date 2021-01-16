@@ -16,7 +16,7 @@ class MyBot(TeamsActivityHandler):
     # See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types.
 
     async def on_message_activity(self, turn_context: TurnContext):
-        token = 'r57nRikJuOFsdufl5u9kowVbJLFl5YDEb3VmY60iVLyZhx63Vi4FwnvJlPL85yc-rIBHLG6ryXu0tgj-iwmH8w'
+        token = 'mzHkD7H40Cv_EfBs_yqObJAO2Az1DylnxgapOeYw3bnD_oXZBEiCCPJGcoEiAGGPIFnQZSIXfB3bbQZNpRYg2w'
         call_header = {'accept':'application/json','Authorization': 'Bearer ' + token}
         url_base = 'https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient'
        
@@ -46,13 +46,30 @@ class MyBot(TeamsActivityHandler):
                 urlAllergy = url_base + "/" + patient_find["resource"]["id"] + "/AllergyIntolerance"
                 response = requests.get(urlAllergy, headers=call_header, verify=True)
                 allergies = json.loads(response.text)
-                for entry in allergies["entry"]:
-                    substance = entry["resource"]["substance"]["text"]
-                    note = entry["resource"]["note"]["text"]
-                    reaction = entry["resource"]["reaction"][0]["manifestation"][0]["text"]
-                    serverity = entry["resource"]["reaction"][0]["severity"]
-                    display = "Substance: " + substance + "\n\nNote: " + note + "\n\nReaction: " + reaction + "\n\nServerity: " + serverity + "\n\n"
-                    await turn_context.send_activity(display)
+                if "entry" in allergies:
+                    for entry in allergies["entry"]:
+                        if "substance" in entry["resource"]:
+                            substance = entry["resource"]["substance"]["text"]
+                        else:
+                            substance = "No allergy added"
+                        if "note" in entry["resource"]:
+                            note = entry["resource"]["note"]["text"]
+                        else:
+                            note = "No note added"
+                        if "reaction" in entry["resource"]:
+                            reaction = entry["resource"]["reaction"][0]["manifestation"][0]["text"]
+                            if "serverity" in entry["resource"]["reaction"][0]:
+                                serverity = entry["resource"]["reaction"][0]["severity"]
+                            else: 
+                                serverity = "No serverity added"
+                        else:
+                            reaction = "No reaction added"
+                            serverity = "No serverity added"
+                      
+                        display = "Substance: " + substance + "\n\nNote: " + note + "\n\nReaction: " + reaction + "\n\nServerity: " + serverity + "\n\n"
+                        await turn_context.send_activity(display)
+                else:
+                    await turn_context.send_activity("No allergy history")
                     
         elif lsText[0] == "patient":
             url = url_base
