@@ -81,7 +81,8 @@ class WelcomeUserBot(ActivityHandler):
         global trak_careProvider
         global trak_dob
         global trak_gender
-        global trak_recordNumber        
+        global trak_recordNumber
+        global trak_url        
         
         # Get the state properties from the turn context.
         welcome_user_state = await self.user_state_accessor.get(
@@ -113,7 +114,7 @@ class WelcomeUserBot(ActivityHandler):
             PASS = 'SYS'
             """
             # token needs to be entered manually.
-            token = 'hh6k4b4TgOCNhy9FkBAy-2Mf90BISwlEoQdf7glrCBAbfmwf_0FI7LZvsoYYqlVButsB1d8Ub-37SYUbYEz6Sg'
+            token = 'ayaspPQg3a6aWKk6O5RHPtLLRFwSmuLrK9qKdFBr9rY8kgit4cNopfu22Mr329Ep7jBlvZdHblMpyHNyxWre4A'
             call_header = {'accept':'application/json','Authorization': 'Bearer ' + token}
 
             # splits the user input and makes a list
@@ -160,7 +161,7 @@ class WelcomeUserBot(ActivityHandler):
                     await turn_context.send_activity("Something is wrong ! Please check the source code")
 
             else:
-                await turn_context.send_activity("I am SORRY!, I don't understand that.")
+                await turn_context.send_activity("I am SORRY!!!, I don't understand that.")
 
     async def __send_intro_card(self, turn_context: TurnContext):
         card = HeroCard(
