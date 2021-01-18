@@ -16,7 +16,7 @@ class MyBot(TeamsActivityHandler):
     # See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types.
 
     async def on_message_activity(self, turn_context: TurnContext):
-        token = 'mzHkD7H40Cv_EfBs_yqObJAO2Az1DylnxgapOeYw3bnD_oXZBEiCCPJGcoEiAGGPIFnQZSIXfB3bbQZNpRYg2w'
+        token = 'w0en3hwnvvaHXlQTnJI-2UwDXke3nNaokk-FhhCIvCJ1I8JAJ3z1b-7FDFP0MQoT4afaEK9E8_t_XFHbMmSJAw'
         call_header = {'accept':'application/json','Authorization': 'Bearer ' + token}
         url_base = 'https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient'
        
