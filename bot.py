@@ -28,22 +28,14 @@ class MyBot(TeamsActivityHandler):
         elif text in ("intro", "help"):
             await self.__send_intro_card(turn_context)
         elif lsText[0] == "allergy":
-            url = url_base
+            url = url_base + "?identifier=" + lsText[1].upper()
             response = requests.get(url, headers=call_header, verify=True)
-            patients = json.loads(response.text)["entry"]
-            search = lsText[1]
-            find = False
-            patient_find = {}
-            for patient in patients:
-                if "identifier" in patient["resource"]:
-                    if patient["resource"]["identifier"][1]["value"].lower() == search:
-                        find = True
-                        patient_find = patient
-                        break
-            if find == False:
+            res = json.loads(response.text)
+            if res["total"] == 0:
                 await turn_context.send_activity("Patient not found!")
             else: 
-                urlAllergy = url_base + "/" + patient_find["resource"]["id"] + "/AllergyIntolerance"
+                patient = json.loads(response.text)["entry"][0]
+                urlAllergy = url_base + "/" + patient["resource"]["id"] + "/AllergyIntolerance"
                 response = requests.get(urlAllergy, headers=call_header, verify=True)
                 allergies = json.loads(response.text)
                 if "entry" in allergies:
@@ -58,36 +50,28 @@ class MyBot(TeamsActivityHandler):
                             note = "No note added"
                         if "reaction" in entry["resource"]:
                             reaction = entry["resource"]["reaction"][0]["manifestation"][0]["text"]
-                            if "serverity" in entry["resource"]["reaction"][0]:
-                                serverity = entry["resource"]["reaction"][0]["severity"]
+                            if "severity" in entry["resource"]["reaction"][0]:
+                                severity = entry["resource"]["reaction"][0]["severity"]
                             else: 
-                                serverity = "No serverity added"
+                                severity = "No severity added"
                         else:
                             reaction = "No reaction added"
-                            serverity = "No serverity added"
+                            severity = "No severity added"
                       
-                        display = "Substance: " + substance + "\n\nNote: " + note + "\n\nReaction: " + reaction + "\n\nServerity: " + serverity + "\n\n"
+                        display = "Substance: " + substance + "\n\nNote: " + note + "\n\nReaction: " + reaction + "\n\nSeverity: " + severity + "\n\n"
                         await turn_context.send_activity(display)
                 else:
                     await turn_context.send_activity("No allergy history")
                     
         elif lsText[0] == "patient":
-            url = url_base
+            url = url_base + "?identifier=" + lsText[1].upper()
             response = requests.get(url, headers=call_header, verify=True)
-            patients = json.loads(response.text)["entry"]
-            search = lsText[1]
-            find = False
-            patient_find = {}
-            for patient in patients:
-                if "identifier" in patient["resource"]:
-                    if patient["resource"]["identifier"][1]["value"].lower() == search:
-                        find = True
-                        patient_find = patient
-                        break
-            if find == False:
+            res = json.loads(response.text)
+            if res["total"] == 0:
                 await turn_context.send_activity("Patient not found!")
             else: 
-                await self.__send_patient_card(turn_context, patient_find)
+                patient = json.loads(response.text)["entry"][0]
+                await self.__send_patient_card(turn_context, patient)
         else:
             await turn_context.send_activity(f"Did you say '{ text }'?")
 
