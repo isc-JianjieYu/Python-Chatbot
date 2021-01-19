@@ -16,7 +16,7 @@ class MyBot(TeamsActivityHandler):
     # See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types.
 
     async def on_message_activity(self, turn_context: TurnContext):
-        token = 'w0en3hwnvvaHXlQTnJI-2UwDXke3nNaokk-FhhCIvCJ1I8JAJ3z1b-7FDFP0MQoT4afaEK9E8_t_XFHbMmSJAw'
+        token = 'YKTyZjPoGj2OaU1uwNuksqiJEdVuBcvHqU6sdxZOupGnCEzW3hVo4ypxZPBos9U5x4mKhxStTnKzqqy8Rc8u8g'
         call_header = {'accept':'application/json','Authorization': 'Bearer ' + token}
         url_base = 'https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient'
        
@@ -120,23 +120,16 @@ class MyBot(TeamsActivityHandler):
         buttons=[
                 CardAction(
         type=ActionTypes.open_url,
-        title="list patients / patients",
-        text="list patients / patients",
-        display_text="list patients / patients",
-        value="https://docs.microsoft.com/en-us/azure/bot-service/?view=azure-bot-service-4.0",
-                        ),
-                        CardAction(
-        type=ActionTypes.open_url,
-        title="patient 'id'",
-        text="patient 'id'",
-        display_text="patient 'id'",
+        title="patient 'MRN'",
+        text="patient 'MRN'",
+        display_text="patient 'MRN'",
         value="https://stackoverflow.com/questions/tagged/botframework",
                         ),
                         CardAction(
         type=ActionTypes.open_url,
-        title="patient 'keyword'",
-        text="patient 'keyword'",
-        display_text="patient 'keyword'",
+        title="allergy 'MRN'",
+        text="allergy 'MRN'",
+        display_text="allergy 'MRN'",
         value="https://docs.microsoft.com/en-us/azure/bot-service/bot-builder-howto-deploy-azure?view=azure-bot-service-4.0",
                         ),
                     ],

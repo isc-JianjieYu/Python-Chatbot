@@ -4,6 +4,9 @@
 import sys
 import traceback
 from datetime import datetime
+from http import HTTPStatus
+from typing import Dict
+
 
 from aiohttp import web
 from aiohttp.web import Request, Response, json_response
@@ -13,7 +16,7 @@ from botbuilder.core import (
     BotFrameworkAdapter,
 )
 from botbuilder.core.integration import aiohttp_error_middleware
-from botbuilder.schema import Activity, ActivityTypes
+from botbuilder.schema import Activity, ActivityTypes, ConversationReference
 
 from bot import MyBot
 from config import DefaultConfig
@@ -56,6 +59,10 @@ async def on_error(context: TurnContext, error: Exception):
 
 ADAPTER.on_turn_error = on_error
 
+# Create a shared dictionary.  The Bot will add conversation references when users
+# join the conversation and send messages.
+CONVERSATION_REFERENCES: Dict[str, ConversationReference] = dict()
+
 # Create the Bot
 BOT = MyBot()
 
@@ -79,9 +86,24 @@ async def messages(req: Request) -> Response:
     except Exception as exception:
         raise exception
 
+# Listen for requests on /api/notify, and send a messages to all conversation members.
+async def notify(req: Request) -> Response:  # pylint: disable=unused-argument
+    await _send_proactive_message()
+    return Response(status=HTTPStatus.OK, text="Proactive messages have been sent")
+
+# Send a message to all conversation members.
+# This uses the shared Dictionary that the Bot adds conversation references to.
+async def _send_proactive_message():
+    for conversation_reference in CONVERSATION_REFERENCES.values():
+        await ADAPTER.continue_conversation(
+            conversation_reference,
+            lambda turn_context: turn_context.send_activity("proactive hello"),
+            CONFIG.APP_ID,
+        )
 
 APP = web.Application(middlewares=[aiohttp_error_middleware])
 APP.router.add_post("/api/messages", messages)
+APP.router.add_get("/api/notify", notify)
 
 if __name__ == "__main__":
     try:
