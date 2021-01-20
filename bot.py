@@ -2,10 +2,10 @@
 # Licensed under the MIT License.
 
 from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, CardFactory
-from botbuilder.core.teams import TeamsActivityHandler
-from botbuilder.schema import ChannelAccount, MessageReaction, HeroCard, CardImage, CardAction, ActionTypes, Mention, BasicCard
+from botbuilder.core.teams import TeamsActivityHandler, TeamsInfo
+from botbuilder.schema import ChannelAccount, MessageReaction, HeroCard, CardImage, CardAction, ActionTypes, Mention, ConversationReference, Activity
 from botbuilder.schema.teams import TeamsChannelAccount, TeamInfo, ChannelInfo
-from typing import List
+from typing import List, Dict
 import requests
 import sys
 import json
@@ -14,19 +14,32 @@ import subprocess
 
 class MyBot(TeamsActivityHandler):
     # See https://aka.ms/about-bot-activity-message to learn more about the message and other activity types.
+    def __init__(self, conversation_references: Dict[str, ConversationReference], list_care_provider : List[str]):
+        self.conversation_references = conversation_references
+        self.list_care_provider = list_care_provider
+
+
+    async def on_conversation_update_activity(self, turn_context: TurnContext):
+        self._add_conversation_reference(turn_context.activity)
+        return await super().on_conversation_update_activity(turn_context)
 
     async def on_message_activity(self, turn_context: TurnContext):
-        token = 'YKTyZjPoGj2OaU1uwNuksqiJEdVuBcvHqU6sdxZOupGnCEzW3hVo4ypxZPBos9U5x4mKhxStTnKzqqy8Rc8u8g'
+        self._add_conversation_reference(turn_context.activity)
+
+        token = '3XdXHH_gEIFHDQrVLCICQzHZGhY47L0T8hxDPdkMF9nvBUvxBKGvnaezgUIApECGXnIMwUp3ZYnyZAPCf4Jecg'
         call_header = {'accept':'application/json','Authorization': 'Bearer ' + token}
         url_base = 'https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient'
        
         TurnContext.remove_recipient_mention(turn_context.activity)
         text = turn_context.activity.text.strip().lower()
         lsText = text.split(" ")
+        #Greet
         if text in ("hello", "hi"):
             await turn_context.send_activity("Hi, I'm the InterSystems Bot. Here to help you!")
+        #Help
         elif text in ("intro", "help"):
             await self.__send_intro_card(turn_context)
+        #Search allergy histories
         elif lsText[0] == "allergy":
             url = url_base + "?identifier=" + lsText[1].upper()
             response = requests.get(url, headers=call_header, verify=True)
@@ -35,6 +48,7 @@ class MyBot(TeamsActivityHandler):
                 await turn_context.send_activity("Patient not found!")
             else: 
                 patient = json.loads(response.text)["entry"][0]
+                await turn_context.send_activity(f'Below are allergy histories of the patient - {patient["resource"]["name"][0]["family"][0]} {patient["resource"]["name"][0]["given"][0]} {patient["resource"]["birthDate"]}:')
                 urlAllergy = url_base + "/" + patient["resource"]["id"] + "/AllergyIntolerance"
                 response = requests.get(urlAllergy, headers=call_header, verify=True)
                 allergies = json.loads(response.text)
@@ -62,7 +76,7 @@ class MyBot(TeamsActivityHandler):
                         await turn_context.send_activity(display)
                 else:
                     await turn_context.send_activity("No allergy history")
-                    
+        # search patient            
         elif lsText[0] == "patient":
             url = url_base + "?identifier=" + lsText[1].upper()
             response = requests.get(url, headers=call_header, verify=True)
@@ -72,6 +86,22 @@ class MyBot(TeamsActivityHandler):
             else: 
                 patient = json.loads(response.text)["entry"][0]
                 await self.__send_patient_card(turn_context, patient)
+        elif "provider" in text:
+            await turn_context.send_activity("Mentioning all the care providers:")
+            members = await TeamsInfo.get_team_members(turn_context)
+            for provider in self.list_care_provider:
+                for member in members:
+                    if member.name == provider:
+                        mention = Mention(
+                        mentioned=member,
+                        text=f"<at>{member.name}</at>",
+                        type="mention",
+                        )
+
+                        reply_activity = MessageFactory.text(f"Hello {mention.text}")
+                        reply_activity.entities = [Mention().deserialize(mention.serialize())]
+                        await turn_context.send_activity(reply_activity)
+        # Repeat the word
         else:
             await turn_context.send_activity(f"Did you say '{ text }'?")
 
@@ -185,3 +215,14 @@ class MyBot(TeamsActivityHandler):
         return await turn_context.send_activity(
                     MessageFactory.attachment(CardFactory.hero_card(card))
                 )
+    def _add_conversation_reference(self, activity: Activity):
+        """
+        This populates the shared Dictionary that holds conversation references. In this sample,
+        this dictionary is used to send a message to members when /api/notify is hit.
+        :param activity:
+        :return:
+        """
+        conversation_reference = TurnContext.get_conversation_reference(activity)
+        self.conversation_references[
+            conversation_reference.user.id
+        ] = conversation_reference

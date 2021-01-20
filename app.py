@@ -5,7 +5,7 @@ import sys
 import traceback
 from datetime import datetime
 from http import HTTPStatus
-from typing import Dict
+from typing import Dict, List
 
 
 from aiohttp import web
@@ -63,8 +63,11 @@ ADAPTER.on_turn_error = on_error
 # join the conversation and send messages.
 CONVERSATION_REFERENCES: Dict[str, ConversationReference] = dict()
 
+# Create a list that stores care providers' names
+lsCP : List[str] = list()
+
 # Create the Bot
-BOT = MyBot()
+BOT = MyBot(CONVERSATION_REFERENCES, lsCP)
 
 
 # Listen for incoming requests on /api/messages
@@ -86,24 +89,24 @@ async def messages(req: Request) -> Response:
     except Exception as exception:
         raise exception
 
-# Listen for requests on /api/notify, and send a messages to all conversation members.
-async def notify(req: Request) -> Response:  # pylint: disable=unused-argument
-    await _send_proactive_message()
-    return Response(status=HTTPStatus.OK, text="Proactive messages have been sent")
+async def post_notify(req: Request) -> Response:  # pylint: disable=unused-argument
+    body = await req.json()
+    name = body["name"]
+    await _send_post_body(req, name)
+    lsCP.append(name)   
+    return Response(status=HTTPStatus.OK, text="Json messages have been sent")
 
-# Send a message to all conversation members.
-# This uses the shared Dictionary that the Bot adds conversation references to.
-async def _send_proactive_message():
+async def _send_post_body(req : Request, name : str):
     for conversation_reference in CONVERSATION_REFERENCES.values():
         await ADAPTER.continue_conversation(
             conversation_reference,
-            lambda turn_context: turn_context.send_activity("proactive hello"),
+            lambda turn_context: turn_context.send_activity(f"Get REST post: {name}"),
             CONFIG.APP_ID,
-        )
+        ) 
 
 APP = web.Application(middlewares=[aiohttp_error_middleware])
 APP.router.add_post("/api/messages", messages)
-APP.router.add_get("/api/notify", notify)
+APP.router.add_post("/api/post_notify", post_notify)
 
 if __name__ == "__main__":
     try:
