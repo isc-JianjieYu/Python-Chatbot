@@ -104,9 +104,16 @@ async def _send_post_body(req : Request, name : str):
             CONFIG.APP_ID,
         ) 
 
+async def get_response(req: Request) -> Response:
+    body = await req.text()
+    print(body)
+    return Response(status=HTTPStatus.OK, text="Good!")
+
+
 APP = web.Application(middlewares=[aiohttp_error_middleware])
 APP.router.add_post("/api/messages", messages)
 APP.router.add_post("/api/post_notify", post_notify)
+APP.router.add_get("/api/responding", get_response)
 
 if __name__ == "__main__":
     try:

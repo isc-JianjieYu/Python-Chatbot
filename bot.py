@@ -2,9 +2,10 @@
 # Licensed under the MIT License.
 
 from botbuilder.core import ActivityHandler, TurnContext, MessageFactory, UserState, CardFactory
-from botbuilder.core.teams import TeamsActivityHandler, TeamsInfo
+from botbuilder.core.teams import TeamsActivityHandler, TeamsInfo, teams_get_channel_id, teams_get_team_info, teams_notify_user
 from botbuilder.schema import ChannelAccount, MessageReaction, HeroCard, CardImage, CardAction, ActionTypes, Mention, ConversationReference, Activity
 from botbuilder.schema.teams import TeamsChannelAccount, TeamInfo, ChannelInfo
+from botframework.connector import Channels
 from typing import List, Dict
 import requests
 import sys
@@ -26,7 +27,7 @@ class MyBot(TeamsActivityHandler):
     async def on_message_activity(self, turn_context: TurnContext):
         self._add_conversation_reference(turn_context.activity)
 
-        token = '3XdXHH_gEIFHDQrVLCICQzHZGhY47L0T8hxDPdkMF9nvBUvxBKGvnaezgUIApECGXnIMwUp3ZYnyZAPCf4Jecg'
+        token = 'dhMtnzCVimI84c1KEkV-ciBUxsGWK_-dKOqGUblEsjDisNVA1sfrVfd13FRYLeaBRIo4mgAbewLgRA1CtwCNRg'
         call_header = {'accept':'application/json','Authorization': 'Bearer ' + token}
         url_base = 'https://tcfhirsandbox.intersystems.com.au/fhir/dstu2/Patient'
        
@@ -39,68 +40,90 @@ class MyBot(TeamsActivityHandler):
         #Help
         elif text in ("intro", "help"):
             await self.__send_intro_card(turn_context)
+        #Search patient            
+        elif lsText[0] == "patient":
+            if len(lsText) == 2:
+                url = url_base + "?identifier=" + lsText[1].upper()
+                response = requests.get(url, headers=call_header, verify=True)
+                res = json.loads(response.text)
+                if res["total"] == 0:
+                    await turn_context.send_activity("Patient not found!")
+                else: 
+                    patient = json.loads(response.text)["entry"][0]
+                    await self.__send_patient_card(turn_context, patient)
+            else: 
+                await turn_context.send_activity("Please input MRN after the command 'patient'!")
         #Search allergy histories
         elif lsText[0] == "allergy":
-            url = url_base + "?identifier=" + lsText[1].upper()
-            response = requests.get(url, headers=call_header, verify=True)
-            res = json.loads(response.text)
-            if res["total"] == 0:
-                await turn_context.send_activity("Patient not found!")
-            else: 
-                patient = json.loads(response.text)["entry"][0]
-                await turn_context.send_activity(f'Below are allergy histories of the patient - {patient["resource"]["name"][0]["family"][0]} {patient["resource"]["name"][0]["given"][0]} {patient["resource"]["birthDate"]}:')
-                urlAllergy = url_base + "/" + patient["resource"]["id"] + "/AllergyIntolerance"
-                response = requests.get(urlAllergy, headers=call_header, verify=True)
-                allergies = json.loads(response.text)
-                if "entry" in allergies:
-                    for entry in allergies["entry"]:
-                        if "substance" in entry["resource"]:
-                            substance = entry["resource"]["substance"]["text"]
-                        else:
-                            substance = "No allergy added"
-                        if "note" in entry["resource"]:
-                            note = entry["resource"]["note"]["text"]
-                        else:
-                            note = "No note added"
-                        if "reaction" in entry["resource"]:
-                            reaction = entry["resource"]["reaction"][0]["manifestation"][0]["text"]
-                            if "severity" in entry["resource"]["reaction"][0]:
-                                severity = entry["resource"]["reaction"][0]["severity"]
-                            else: 
+            if len(lsText) == 2:
+                url = url_base + "?identifier=" + lsText[1].upper()
+                response = requests.get(url, headers=call_header, verify=True)
+                res = json.loads(response.text)
+                if res["total"] == 0:
+                    await turn_context.send_activity("Patient not found!")
+                else: 
+                    patient = json.loads(response.text)["entry"][0]
+                    await turn_context.send_activity(f'Below are allergy histories of the patient - {patient["resource"]["name"][0]["family"][0]} {patient["resource"]["name"][0]["given"][0]} {patient["resource"]["birthDate"]}:')
+                    urlAllergy = url_base + "/" + patient["resource"]["id"] + "/AllergyIntolerance"
+                    response = requests.get(urlAllergy, headers=call_header, verify=True)
+                    allergies = json.loads(response.text)
+                    if "entry" in allergies:
+                        for entry in allergies["entry"]:
+                            if "substance" in entry["resource"]:
+                                substance = entry["resource"]["substance"]["text"]
+                            else:
+                                substance = "No allergy added"
+                            if "note" in entry["resource"]:
+                                note = entry["resource"]["note"]["text"]
+                            else:
+                                note = "No note added"
+                            if "reaction" in entry["resource"]:
+                                reaction = entry["resource"]["reaction"][0]["manifestation"][0]["text"]
+                                if "severity" in entry["resource"]["reaction"][0]:
+                                    severity = entry["resource"]["reaction"][0]["severity"]
+                                else: 
+                                    severity = "No severity added"
+                            else:
+                                reaction = "No reaction added"
                                 severity = "No severity added"
-                        else:
-                            reaction = "No reaction added"
-                            severity = "No severity added"
-                      
-                        display = "Substance: " + substance + "\n\nNote: " + note + "\n\nReaction: " + reaction + "\n\nSeverity: " + severity + "\n\n"
-                        await turn_context.send_activity(display)
-                else:
-                    await turn_context.send_activity("No allergy history")
-        # search patient            
-        elif lsText[0] == "patient":
-            url = url_base + "?identifier=" + lsText[1].upper()
-            response = requests.get(url, headers=call_header, verify=True)
-            res = json.loads(response.text)
-            if res["total"] == 0:
-                await turn_context.send_activity("Patient not found!")
-            else: 
-                patient = json.loads(response.text)["entry"][0]
-                await self.__send_patient_card(turn_context, patient)
-        elif "provider" in text:
-            await turn_context.send_activity("Mentioning all the care providers:")
-            members = await TeamsInfo.get_team_members(turn_context)
+                        
+                            display = "Substance: " + substance + "\n\nNote: " + note + "\n\nReaction: " + reaction + "\n\nSeverity: " + severity + "\n\n"
+                            await turn_context.send_activity(display)
+                    else:
+                        await turn_context.send_activity("No allergy history")
+            else:
+                await turn_context.send_activity("Please input MRN after the command 'allergy'!")
+        #list all providers
+        elif text == "provider":
+            await turn_context.send_activity("Here are the care providers' names received by REST:")
             for provider in self.list_care_provider:
-                for member in members:
-                    if member.name == provider:
-                        mention = Mention(
-                        mentioned=member,
-                        text=f"<at>{member.name}</at>",
-                        type="mention",
-                        )
+                  await turn_context.send_activity(provider)
+        #mention provider in the teams
+        elif "mention" in text:
+            if turn_context.activity.channel_id == Channels.ms_teams:
+                try:
+                    await turn_context.send_activity("Mentioning all the care providers:")
+                    members = await TeamsInfo.get_team_members(turn_context)
+                    for provider in self.list_care_provider:
+                        for member in members:
+                            if member.name == provider:
+                                mention = Mention(
+                                mentioned=member,
+                                text=f"<at>{member.name}</at>",
+                                type="mention",
+                                )
 
-                        reply_activity = MessageFactory.text(f"Hello {mention.text}")
-                        reply_activity.entities = [Mention().deserialize(mention.serialize())]
-                        await turn_context.send_activity(reply_activity)
+                                reply_activity = MessageFactory.text(f"Care Provider: {mention.text}")
+                                reply_activity.entities = [Mention().deserialize(mention.serialize())]
+                                await turn_context.send_activity(reply_activity)
+                except:
+                    await turn_context.send_activity("This function is only supported in teams/channels!")
+            else:
+                await turn_context.send_activity("This function is only supported in Microsoft Teams")
+        #get team id
+        elif "id" in text:
+            id = TeamsInfo.get_team_id(turn_context)
+            await turn_context.send_activity(f"Your team Id: {id}")
         # Repeat the word
         else:
             await turn_context.send_activity(f"Did you say '{ text }'?")
